@@ -3,8 +3,11 @@
 /**
  * Example Landing Page with Voice/Mode/Persona Selection
  *
- * This is a reference implementation. Customize the styling and content
- * to match your presentation's visual language.
+ * This file contains:
+ * 1. HomePage - Parent page that renders landing/presentation and handles session start
+ * 2. LandingPage - UI component for voice/mode/persona selection
+ *
+ * Customize the styling and content to match your presentation's visual language.
  *
  * Features:
  * - Voice enable/disable toggle
@@ -17,7 +20,7 @@
  * - hooks/useAuditionSession for persona auditions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
 import {
   Mic,
   MicOff,
@@ -36,8 +39,9 @@ import {
   X,
 } from 'lucide-react';
 import type { InteractionMode, PersonaType } from '@/components/voice-agent';
-import { getAllPersonas } from '@/components/voice-agent';
+import { getAllPersonas, useVoiceAgent } from '@/components/voice-agent';
 import { useAuditionSession } from '@/hooks/useAuditionSession';
+// import { Presentation, slides } from '@/components/slides'; // Your presentation component
 
 interface LandingPageProps {
   onStart: (enableVoice: boolean, mode: InteractionMode, persona: PersonaType) => void;
@@ -72,6 +76,52 @@ const personaIcons: Record<PersonaType, typeof Compass> = {
   expert: GraduationCap,
   peer: Users,
 };
+
+// =============================================================================
+// HomePage - Parent page that handles session start
+// =============================================================================
+
+export function HomePage() {
+  const [started, setStarted] = useState(false);
+  const [shouldStartVoice, setShouldStartVoice] = useState(false);
+  const { startSession, setMode, setPersona, status } = useVoiceAgent();
+
+  const handleStart = (enableVoice: boolean, mode: InteractionMode, persona: PersonaType) => {
+    setStarted(true);
+    if (enableVoice) {
+      setMode(mode);
+      setPersona(persona);
+      setShouldStartVoice(true);
+    }
+  };
+
+  // Wrap startSession in useEffectEvent to prevent double-starts.
+  // startSession's reference changes during connection (disconnected → connecting → connected),
+  // which would cause the effect to re-run without useEffectEvent.
+  const onStartVoice = useEffectEvent(() => {
+    startSession();
+    setShouldStartVoice(false);
+  });
+
+  useEffect(() => {
+    if (shouldStartVoice && started && status === 'disconnected') {
+      // Small delay ensures presentation has mounted and set slide context
+      const timer = setTimeout(onStartVoice, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldStartVoice, started, status]);
+
+  if (!started) {
+    return <LandingPage onStart={handleStart} />;
+  }
+
+  // return <Presentation slides={slides} />;
+  return <div>Your presentation component here</div>;
+}
+
+// =============================================================================
+// LandingPage - UI component for voice/mode/persona selection
+// =============================================================================
 
 export default function LandingPage({ onStart }: LandingPageProps) {
   const [enableVoice, setEnableVoice] = useState(true);

@@ -153,7 +153,16 @@ If using persona auditions, update `buildAuditionInstructions()` to reference yo
 
 ### Optional: Landing Page
 
-If the presentation doesn't have a start page, consider adding one with voice/mode/persona selection. See [files/LandingPage-example.tsx](files/LandingPage-example.tsx) for a reference implementation.
+A landing page lets users configure their experience before starting. It should include:
+
+- **Voice toggle** - Enable/disable the voice agent
+- **Mode selection** - Choose interaction style (presenter, dialogue, assistant)
+- **Persona selection** - Choose guide personality, optionally with "audition" preview
+- **Start handler** - Set mode/persona and auto-start the session
+
+When auto-starting the session from a `useEffect`, wrap `startSession` in `useEffectEvent` to prevent double-starts during the connection handshake.
+
+See [files/LandingPage-example.tsx](files/LandingPage-example.tsx) for a complete reference implementation.
 
 ---
 
