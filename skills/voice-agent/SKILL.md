@@ -16,19 +16,27 @@ Add an OpenAI Realtime API voice agent that presents slides, interacts with user
 
 | Phase | Effort | Description |
 |-------|--------|-------------|
-| 1. Infrastructure | 15% | Copy core files, wire up providers |
-| 2. Customize Framework | 15% | Set presentation metadata, tweak personas |
-| 3. Design Voice Engagement | 70% | Creative work: per-slide contexts, hints |
+| 1. Infrastructure | 10% | Copy core files, wire up providers |
+| 2. Customize Framework | 10% | Set presentation metadata, tweak personas |
+| 3. Design Voice Engagement | 80% | Four passes: narrative, content, engagement, hints |
 
 **The creative work is Phase 3.** Phases 1-2 are mechanical setup.
+
+Phase 3 breaks down into four passes:
+- **Pass 1:** Extract narrative from existing docs (10%)
+- **Pass 2:** Content foundation for each slide (25%)
+- **Pass 3:** Engagement design for each slide (35%)
+- **Pass 4:** UI interactivity hints (10%)
 
 ---
 
 ## Phase 1: Infrastructure Setup
 
-Copy these files **exactly as-is** from [files/](files/). No customization needed.
+This phase is mechanical file copying and integration. Use sub-agents to create files in parallel.
 
-### Core Files (Copy Verbatim)
+### Step 1.1: Copy Core Files
+
+Read each source file from [files/](files/) and write it to the target path. These are complete, working files - no modification needed.
 
 | Target Path | Source |
 |-------------|--------|
@@ -41,53 +49,59 @@ Copy these files **exactly as-is** from [files/](files/). No customization neede
 | `components/voice-agent/VoiceAgentButton.tsx` | [files/VoiceAgentButton.tsx](files/VoiceAgentButton.tsx) |
 | `components/voice-agent/index.ts` | [files/voice-agent-index.ts](files/voice-agent-index.ts) |
 
-### Template File (Customize)
+### Step 1.2: Copy Template File
+
+Copy this file - it has `// TODO:` markers that you'll customize in Phase 2:
 
 | Target Path | Source |
 |-------------|--------|
 | `lib/realtime/instructions.ts` | [files/instructions-template.ts](files/instructions-template.ts) |
 
-This file has `// TODO:` markers for what to customize.
+### Step 1.3: Integrate with Existing App
 
-### Integration Steps
+Modify these **existing files** to wire up the voice agent. Don't replace the files - add to them.
 
-1. **Wrap root layout with provider:**
+**app/layout.tsx** - Add provider wrapper and button:
+- Import `VoiceAgentProvider` and `VoiceAgentButton` from `@/components/voice-agent`
+- Wrap `{children}` with `<VoiceAgentProvider>`
+- Add `<VoiceAgentButton />` inside the provider, after children
+
 ```tsx
-// app/layout.tsx
-import { VoiceAgentProvider } from '@/components/voice-agent';
+// Add these imports
+import { VoiceAgentProvider, VoiceAgentButton } from '@/components/voice-agent';
 
-export default function RootLayout({ children }) {
-  return (
-    <html>
-      <body>
-        <VoiceAgentProvider>
-          {children}
-          <VoiceAgentButton />
-        </VoiceAgentProvider>
-      </body>
-    </html>
-  );
-}
+// In the return, wrap children:
+<VoiceAgentProvider>
+  {children}
+  <VoiceAgentButton />
+</VoiceAgentProvider>
 ```
 
-2. **Register navigation in presentation component:**
+**Presentation component** (e.g., `components/slides/Presentation.tsx`) - Register navigation:
+- Import `useVoiceAgent` hook
+- Call `registerNavigationCallbacks` with your navigation functions
+- Call `setSlideOverview` with slide metadata
+- Call `setCurrentSlide` when the current slide changes
+
 ```tsx
 import { useVoiceAgent } from '@/components/voice-agent';
 
-// In your presentation component:
+// Inside the component:
 const { registerNavigationCallbacks, setCurrentSlide, setSlideOverview } = useVoiceAgent();
 
+// On mount - register how the agent can navigate
 useEffect(() => {
   registerNavigationCallbacks({
-    goToNext: () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1)),
-    goToPrevious: () => setCurrentSlide(prev => Math.max(prev - 1, 0)),
-    goToSlide: (index) => setCurrentSlide(index),
+    goToNext: () => /* your next slide logic */,
+    goToPrevious: () => /* your prev slide logic */,
+    goToSlide: (index) => /* your go-to-slide logic */,
     getCurrentSlide: () => currentSlide,
     getTotalSlides: () => slides.length,
   });
   setSlideOverview(slides.map(s => ({ id: s.id, title: s.title })));
 }, []);
 
+// When slide changes - keep agent informed
 useEffect(() => {
   setCurrentSlide({
     id: slides[currentSlide].id,
@@ -98,7 +112,7 @@ useEffect(() => {
 }, [currentSlide]);
 ```
 
-Use sub-agents to create files in parallel.
+Adapt the callback implementations to match how your presentation handles navigation.
 
 ---
 
@@ -145,9 +159,60 @@ If the presentation doesn't have a start page, consider adding one with voice/mo
 
 ## Phase 3: Design Voice Engagement
 
-**This is where you spend most of your effort.** Work through three focused passes, each building on the last. Don't try to do everything at once.
+**This is where you spend most of your effort.** Work through four focused passes, each building on the last. Don't try to do everything at once.
 
-### Pass 1: Content Foundation
+### Pass 1: Extract Narrative
+
+Your presentation already has narrative documentation (NARRATIVE.md, SLIDES.md, or similar). Extract and codify it for the voice agent.
+
+Create `lib/slide-contexts/overview.ts`:
+
+```typescript
+// Extracted from NARRATIVE.md and SLIDES.md
+// This is reference material for writing consistent slide contexts
+
+export const PRESENTATION_OVERVIEW = `
+# [Your Presentation Title] - Overview
+
+## The Story Arc
+
+[Extract from NARRATIVE.md - the journey you're taking users on]
+
+### Introduction (Slides X-Y): [Section purpose]
+- [What happens in this section]
+- [Key moments]
+
+### [Section Name] (Slides X-Y)
+- [What this section covers]
+- [How it connects to the previous section]
+
+[Continue for each major section...]
+
+## Key Narrative Principles
+
+- [Principles from your narrative - e.g., "progressive revelation"]
+- [What themes to reinforce throughout]
+- [How concepts connect to each other]
+`;
+
+export const RUNNING_EXAMPLE = `
+## Running Example: [Your Example Name]
+
+[Extract details about your main example/demo that threads through the presentation]
+
+- What it is
+- How it's used throughout
+- What can go wrong (if relevant)
+`;
+```
+
+**Focus:** Codify what already exists. Pull from NARRATIVE.md and SLIDES.md - don't invent new narrative.
+
+**Why this matters:** When writing individual slide contexts, you'll reference this to ensure consistency. Every slide context should align with the overall story arc.
+
+---
+
+### Pass 2: Content Foundation
 
 For each slide, create `lib/slide-contexts/slides/slide-XX-name.ts` with just the **factual content**:
 
@@ -155,7 +220,7 @@ For each slide, create `lib/slide-contexts/slides/slide-XX-name.ts` with just th
 import { SlideContext } from '@/lib/realtime/instructions';
 
 export const slideContext: SlideContext = {
-  // PASS 1: What's here and what matters
+  // PASS 2: What's here and what matters
   visualDescription: `
     Describe what the user sees on screen.
     Include layout, UI elements, interactive controls.
@@ -171,7 +236,7 @@ export const slideContext: SlideContext = {
     Related concepts the user might ask about.
   `,
 
-  // PASS 2: Leave empty for now
+  // PASS 3: Leave empty for now
   engagementApproach: '',
   openingHook: '',
   interactionPrompts: [],
@@ -196,16 +261,19 @@ export function initializeSlideContexts(): void {
     setSlideContext(id, ctx);
   }
 }
+
+// Re-export overview for reference
+export { PRESENTATION_OVERVIEW, RUNNING_EXAMPLE } from './overview';
 ```
 
 ---
 
-### Pass 2: Engagement Design
+### Pass 3: Engagement Design
 
-Now go back through each slide and fill in the **engagement strategy**. This is the creative pass.
+Now go back through each slide and fill in the **engagement strategy**. Reference your overview to ensure each slide fits the narrative arc.
 
 ```typescript
-  // PASS 2: How to engage
+  // PASS 3: How to engage
   engagementApproach: `
     What's the unique strategy for THIS slide?
     e.g., "guided discovery", "pose question first", "create tension"
@@ -238,13 +306,13 @@ Now go back through each slide and fill in the **engagement strategy**. This is 
 | Skeptic/objection | Address concerns conversationally |
 | Recap | Reinforce key points, call to action |
 
-**Focus:** Personality and flow. Read the opening hooks aloud - do they sound natural? Does each slide feel different?
+**Focus:** Personality and flow. Read the opening hooks aloud - do they sound natural? Does each slide feel different? Do transitions connect to the narrative arc from your overview?
 
 See [SLIDE-CONTEXT-PATTERN.md](SLIDE-CONTEXT-PATTERN.md) for detailed examples by slide type.
 
 ---
 
-### Pass 3: UI Interactivity
+### Pass 4: UI Interactivity
 
 For slides with interactive elements, add `sendHint()` calls to the slide components. This keeps the agent informed about user actions.
 
