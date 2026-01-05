@@ -18,15 +18,17 @@ Add an OpenAI Realtime API voice agent that presents slides, interacts with user
 |-------|--------|-------------|
 | 1. Infrastructure | 10% | Copy core files, wire up providers |
 | 2. Customize Framework | 10% | Set presentation metadata, tweak personas |
-| 3. Design Voice Engagement | 80% | Four passes: narrative, content, engagement, hints |
+| 3. Design Voice Engagement | 80% | Six passes: narrative, content, engagement, hints, progression, pacing |
 
 **The creative work is Phase 3.** Phases 1-2 are mechanical setup.
 
-Phase 3 breaks down into four passes:
+Phase 3 breaks down into six passes:
 - **Pass 1:** Extract narrative from existing docs (10%)
-- **Pass 2:** Content foundation for each slide (25%)
-- **Pass 3:** Engagement design for each slide (35%)
+- **Pass 2:** Content foundation for each slide (20%)
+- **Pass 3:** Engagement design for each slide (25%)
 - **Pass 4:** UI interactivity hints (10%)
+- **Pass 5:** Progression design for each slide (15%)
+- **Pass 6:** Pacing and over-engagement signals (10%)
 
 ---
 
@@ -349,6 +351,102 @@ export default function SlideXX({ isActive }: SlideProps) {
 **Focus:** Context richness. Include what happened, not just what was clicked.
 
 See [SEND-HINT-PATTERN.md](SEND-HINT-PATTERN.md) for patterns and examples.
+
+---
+
+### Pass 5: Progression Design
+
+Review each slide context as if building from scratch for voice. Define clear exit conditions and progression signals.
+
+For each slide, add:
+
+```typescript
+  // PASS 5: When is this slide "done"?
+  slideGoal: `
+    What should the user understand or experience before leaving?
+    Be specific - this is the exit condition.
+  `,
+  progressionTrigger: `
+    What signals it's time to move on?
+    - User completed a specific action
+    - User demonstrated understanding
+    - User asked about what's next
+    - For static slides: agent covered key points and user had chance to ask questions
+  `,
+```
+
+**Questions to ask for each slide:**
+
+1. What's the ONE thing the user must take away?
+2. What interaction or acknowledgment signals they got it?
+3. For static slides with no clicks: what content must the agent deliver before moving on?
+
+**Progression trigger types:**
+
+| Slide Type | Typical Trigger |
+|------------|-----------------|
+| Interactive demo | User completed the interaction AND acknowledged the insight |
+| Concept reveal | User engaged with revealed content or asked clarifying question |
+| Synthesis/static | Agent delivered both sides of comparison, user had chance to respond |
+| Problem setup | User expressed concern or asked about solutions |
+| Recap | User identified next action or explored summary content |
+
+**Avoid:**
+- Time-based triggers (agent can't track time)
+- Vague triggers like "user seems ready"
+- Triggers that require mind-reading
+
+**Focus:** Clear, observable exit conditions. If you can't tell whether the trigger happened, it's too vague.
+
+---
+
+### Pass 6: Pacing and Over-Engagement
+
+The agent should follow user interest, but not keep introducing new threads on its own. Define limits on agent-initiated engagement.
+
+For each slide, add:
+
+```typescript
+  // PASS 6: Agent pacing
+  agentPacing: {
+    maxAgentQuestions: 2,  // How many questions before offering to move on
+    ifUserPassive: `
+      What to do if user gives brief responses or doesn't engage.
+      Usually: give a concise overview, offer to explore or move on.
+    `,
+  },
+  overEngagementSignals: [
+    'Specific signs the agent is lingering too long',
+    'E.g., user giving one-word responses',
+    'Agent has asked multiple questions without substantive engagement',
+  ],
+```
+
+**The key principle:** Agent-initiated exploration has a budget. User-initiated exploration is unlimited.
+
+- If user wants to go deep on something → follow their lead
+- If user is passive or brief → don't keep probing, offer value and move forward
+
+**Typical budgets by slide type:**
+
+| Slide Type | Agent Questions | If User Passive |
+|------------|-----------------|-----------------|
+| Intro/Title | 1-2 | Give overview, show example |
+| Interactive demo | 1-2 | Walk through one path, offer more |
+| Concept reveal | 1 check | Summarize key point, transition |
+| Static synthesis | 0-1 | Deliver insight, check for questions |
+| Skeptic/objection | 1 | Give key defense, acknowledge validity |
+| Recap | 1 | Highlight most common starting point |
+
+**Over-engagement signals to watch for:**
+
+- User giving one-word or minimal responses to multiple questions
+- User not clicking suggested interactions after prompting
+- Agent has asked 3+ questions without substantive user engagement
+- Conversation circling same points without new insight
+- User explicitly asking to move on or see something else
+
+**Focus:** Respect user attention. The agent's job is to be helpful, not to fill airtime.
 
 ---
 
