@@ -1,21 +1,12 @@
 ---
 description: Analyze and address GitHub PR review comments using Bostrom's Reversal Check
-argument-hint: <pr-number> [--repo owner/repo]
 ---
 
 # Address PR Review Comments
 
 Systematically analyze and address code review comments on a GitHub pull request using Bostrom's Reversal Check framework to evaluate each suggestion's merit.
 
-## Arguments
-
-- `$1`: PR number (required)
-- `$2`: Repository in `owner/repo` format (optional, defaults to current repo)
-
-## Current Context
-
-- Repository: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "unknown"`
-- Current branch: !`git branch --show-current`
+Use context from the current conversation to determine which PR(s) and repo(s) to target.
 
 ---
 
@@ -242,20 +233,8 @@ mutation {
 
 ---
 
-## Usage Examples
-
-```bash
-# Address comments on PR #134 in current repo
-/address-pr-comments 134
-
-# Address comments on PR in specific repo
-/address-pr-comments 456 rdytech/emtech-noema
-```
-
----
-
 ## Begin
 
-Fetch the review comments for PR $1 and begin Phase 1. After fetching, spawn sub-agents to analyze each comment in parallel (Phase 2), then generate the report (Phase 3) and present the plan for my review (Phase 4).
+Identify the PR(s) from conversation context, fetch the review comments, and begin Phase 1. After fetching, spawn sub-agents to analyze each comment in parallel (Phase 2), then generate the report (Phase 3) and present the plan for my review (Phase 4).
 
 Do not proceed to Phase 5 (Apply Changes) or Phase 6 (Respond) until I approve the plan.
