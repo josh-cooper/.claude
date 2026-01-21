@@ -2,6 +2,39 @@
 
 A structured repository for creating and maintaining React Best Practices optimized for agents and LLMs.
 
+## Fork Notes
+
+This skill is forked from [Vercel's React Best Practices](https://github.com/vercel/react-best-practices) with modifications to remove Vercel-specific bias and make the guidance more framework-agnostic.
+
+### Changes from upstream
+
+**Library recommendations:**
+- Replaced SWR with TanStack Query throughout (more widely used, more features)
+- `client-swr-dedup.md` → `client-tanstack-query-dedup.md`
+
+**Framework-agnostic patterns:**
+- Added `React.lazy()` + `Suspense` as the primary pattern alongside `next/dynamic`
+- Generalized deployment advice (removed Vercel Fluid Compute promotion)
+- Removed `@vercel/analytics` examples, replaced with generic placeholders
+
+**Data fetching guidance:**
+- Added `data-fetching-patterns.md` decision guide for choosing the right approach
+- Server Components → URL params → Server Actions → Route Handlers → TanStack Query
+- Updated related rules to cross-reference this decision framework
+- Emphasis on server-first patterns; client-side fetching as last resort
+
+**Documentation updates:**
+- Updated `server-auth-actions.md` to reference React docs instead of Next.js docs
+- Reframed Server Actions as a React feature (not Next.js-specific)
+- Renamed skill from `vercel-react-best-practices` to `react-best-practices`
+
+### What we kept
+
+- Next.js remains a primary example framework (it's the most-used RSC framework)
+- Next.js-specific APIs (`next/dynamic`, `after()`) are shown where relevant
+- Core performance patterns are unchanged - Vercel's engineering advice is solid
+- Original rule structure and categorization
+
 ## Structure
 
 - `rules/` - Individual rule files (one per rule)
@@ -120,4 +153,4 @@ When adding or modifying rules:
 
 ## Acknowledgments
 
-Originally created by [@shuding](https://x.com/shuding).
+Originally created by [@shuding](https://x.com/shuding) at Vercel. Forked and de-Vercelled for framework-agnostic use.
